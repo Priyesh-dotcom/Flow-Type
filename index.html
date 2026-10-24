@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Type - Professional Typing Test</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+            overflow: hidden; 
+        }
+
+        /* Screen Shake for Mistakes */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-4px); }
+        }
+        .animate-shake {
+            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Blinking cursor for current letter */
+        .cursor-pulse {
+            animation: blink 1s step-end infinite;
+            border-bottom: 3px solid #6366f1; /* indigo-500 */
+        }
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: #6366f1; }
+        }
+
+        /* Heart break animation */
+        @keyframes popHeart {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); color: #ef4444; }
+            100% { transform: scale(1); }
+        }
+        .heart-pop {
+            animation: popHeart 0.3s ease-out forwards;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center p-4 md:p-8 selection:bg-indigo-200">
+
+    <!-- Main Container -->
+    <div id="app-container" class="w-full max-w-5xl h-full max-h-[750px] flex flex-col bg-white rounded-3xl border border-slate-200 shadow-2xl shadow-slate-200/50 relative overflow-hidden transition-colors duration-300">
+        
+        <!-- ================= START SCREEN ================= -->
+        <div id="view-start" class="flex flex-col items-center justify-center h-full p-8 text-center space-y-8 w-full max-w-4xl mx-auto transition-opacity duration-300">
+            <div class="bg-indigo-50 p-5 rounded-full text-indigo-600 mb-2 shadow-sm border border-indigo-100 flex items-center justify-center">
+                <i class="ph-fill ph-keyboard text-6xl"></i>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900">
+                Flow Type
+            </h1>
+            <p class="text-base md:text-lg text-slate-600 max-w-lg mx-auto leading-relaxed">
+                Professional typing assessment. 4 Lives. Meaningful context.
+            </p>
+
+            <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <!-- Difficulty Selection -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
+                    <label class="block text-slate-500 uppercase text-xs font-bold tracking-widest mb-4">Select Difficulty</label>
+                    <div class="flex flex-col gap-2" id="difficulty-options"></div>
+                </div>
+
+                <!-- Duration Selection -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
+                    <label class="block text-slate-500 uppercase text-xs font-bold tracking-widest mb-4">Select Duration</label>
+                    <div class="flex flex-col gap-2" id="duration-options"></div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="mt-6 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-full shadow-lg shadow-indigo-200 transition-transform hover:scale-105 active:scale-95 w-full md:w-auto flex items-center justify-center gap-2">
+                <i class="ph-bold ph-play"></i> Start Assessment
+            </button>
+        </div>
+
+
+        <!-- ================= PLAYING SCREEN ================= -->
+        <div id="view-playing" class="hidden flex-col h-full bg-white w-full absolute inset-0">
+            <!-- Progress Bar -->
+            <div class="w-full h-2 bg-slate-100">
+                <div id="time-progress" class="h-full bg-indigo-500 transition-all duration-1000 ease-linear" style="width: 100%"></div>
+            </div>
+
+            <!-- Top HUD -->
+            <div class="flex flex-wrap justify-between items-center px-6 md:px-10 py-4 border-b border-slate-100 bg-white gap-4 z-10 shadow-sm">
+                
+                <!-- Left: Mode & NO GIVEUP -->
+                <div class="flex flex-col gap-2 min-w-[140px]">
+                    <div id="hud-difficulty" class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md inline-block w-max border bg-indigo-50 text-indigo-700 border-indigo-200">
+                        Medium Mode
+                    </div>
+                    <button onclick="endGame(false, 'quit')" class="mt-1 flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-wider bg-red-50 px-2 py-1 rounded-md border border-red-100 w-max">
+                        <i class="ph-bold ph-stop-circle"></i> NO GIVEUP
+                    </button>
+                </div>
+
+                <!-- Center: Lives -->
+                <div class="flex flex-col items-center flex-1">
+                    <div class="text-slate-400 uppercase text-[10px] font-bold tracking-widest mb-1">Lifelines</div>
+                    <div id="hud-lives" class="flex gap-1 text-red-500 text-2xl">
+                        <!-- Hearts populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Right: Live Stats (WPM, Accuracy, Time) -->
+                <div class="flex gap-4 md:gap-6 text-right min-w-[200px] justify-end">
+                    <div class="flex flex-col">
+                        <div class="text-slate-400 uppercase text-[10px] font-bold tracking-widest mb-1">WPM</div>
+                        <div id="hud-wpm" class="text-xl font-black text-slate-800">0</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-slate-400 uppercase text-[10px] font-bold tracking-widest mb-1">ACC</div>
+                        <div id="hud-acc" class="text-xl font-black text-slate-800">100%</div>
+                    </div>
+                    <div class="flex flex-col w-[50px]">
+                        <div class="text-slate-400 uppercase text-[10px] font-bold tracking-widest mb-1">Time</div>
+                        <div id="hud-time" class="text-xl font-black text-slate-800">60s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Canvas -->
+            <div id="typing-canvas" class="flex-1 relative p-8 md:p-12 overflow-hidden flex items-start text-left cursor-text bg-white" onclick="focusInput()">
+                <!-- Hidden Input to capture mobile/desktop seamlessly -->
+                <input type="text" id="hidden-input" class="absolute opacity-0 pointer-events-none w-0 h-0" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                
+                <!-- Words Container -->
+                <div id="words-container" class="flex flex-wrap gap-x-3 md:gap-x-4 gap-y-6 md:gap-y-8 text-2xl md:text-3xl font-medium leading-loose select-none items-center justify-start content-start w-full h-full no-scrollbar">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+            </div>
+        </div>
+
+
+        <!-- ================= END SCREEN ================= -->
+        <div id="view-end" class="hidden flex-col items-center justify-center h-full p-8 text-center space-y-8 w-full overflow-y-auto absolute inset-0 bg-white">
+            
+            <div id="celebration-banner" class="hidden w-full max-w-4xl bg-green-50 border-2 border-green-400 p-6 rounded-2xl mb-2 transform transition-all shadow-sm">
+                <h3 class="text-green-800 font-bold text-xl md:text-2xl mb-2 flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-confetti text-3xl"></i> Outstanding performance!
+                </h3>
+                <p class="text-green-700 text-sm md:text-base leading-relaxed max-w-3xl mx-auto font-medium">
+                    This level of speed and precision is exactly what it takes to efficiently draft detailed Business Requirements Documents, build out robust project architectures, or analyze complex customer churn datasets. Keep up the great momentum!
+                </p>
+            </div>
+
+            <div id="failed-banner" class="hidden w-full max-w-4xl bg-red-50 border-2 border-red-400 p-6 rounded-2xl mb-2 transform transition-all shadow-sm">
+                <h3 class="text-red-800 font-bold text-xl md:text-2xl mb-1 flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-heart-break text-3xl"></i> Out of Lives!
+                </h3>
+                <p class="text-red-700 text-sm md:text-base">Focus on accuracy over raw speed to preserve your lifelines next time.</p>
+            </div>
+
+            <div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3">
+                    <span id="result-title" class="text-indigo-600">Assessment Complete</span>
+                </h2>
+                <div id="result-subtitle" class="inline-block px-3 py-1 rounded-md text-sm font-bold uppercase tracking-wider border bg-indigo-50 text-indigo-700 border-indigo-200">
+                    Medium Mode • 60s
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-4xl mx-auto">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow">
+                    <i class="ph-fill ph-trend-up w-8 h-8 mx-auto mb-4 text-indigo-500 text-3xl"></i>
+                    <div class="text-slate-500 uppercase text-xs font-bold tracking-wider mb-1">Final WPM</div>
+                    <div id="result-wpm" class="text-4xl md:text-5xl font-black text-slate-900">0</div>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow">
+                    <i class="ph-fill ph-target w-8 h-8 mx-auto mb-4 text-green-500 text-3xl"></i>
+                    <div class="text-slate-500 uppercase text-xs font-bold tracking-wider mb-1">Accuracy</div>
+                    <div id="result-accuracy" class="text-4xl md:text-5xl font-black text-slate-900">0%</div>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow">
+                    <i class="ph-fill ph-warning-circle w-8 h-8 mx-auto mb-4 text-red-500 text-3xl"></i>
+                    <div class="text-slate-500 uppercase text-xs font-bold tracking-wider mb-1">Total Errors</div>
+                    <div id="result-errors" class="text-4xl md:text-5xl font-black text-slate-900">0</div>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow">
+                    <i class="ph-fill ph-chart-pie-slice w-8 h-8 mx-auto mb-4 text-orange-500 text-3xl"></i>
+                    <div class="text-slate-500 uppercase text-xs font-bold tracking-wider mb-1">Error Rate</div>
+                    <div id="result-error-rate" class="text-4xl md:text-5xl font-black text-slate-900">0%</div>
+                </div>
+            </div>
+
+            <button onclick="resetToStart()" class="mt-4 flex items-center justify-center gap-2 mx-auto px-8 py-4 bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold text-lg rounded-full transition-all hover:shadow-md active:scale-95">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Try Again
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- PROFESSIONAL PARAGRAPH BANKS ---
+        const PARAGRAPHS = {
+            Easy: [
+                "I have a small dog. He likes to play in the yard. We run and jump all day.",
+                "The sun is in the sky. It is a warm day. I want to go to the park.",
+                "She likes to read books. Her favorite book is about a brave lion.",
+                "My house has a red door. There are green trees in the front."
+            ],
+            Intermediate: [
+                "Our team works on business strategy every week. We look at data to see what users like.",
+                "It is very important to make good choices when planning a new project with the team.",
+                "We use simple reports to understand how our customers shop online and what they buy.",
+                "Good communication helps everyone finish their tasks on time and reach our goals."
+            ],
+            Hard: [
+                "When customers leave our quick-commerce app, we refer to this metric as customer churn.",
+                "We heavily rely on Excel and SQL to find out exactly why they stopped buying groceries.",
+                "Analyzing user behavior helps us build better campaigns to retain our core audience.",
+                "A strong business strategy requires looking at raw data and finding hidden patterns."
+            ],
+            Professional: [
+                "Drafting detailed Business Requirements Documents is a core part of the project process.",
+                "We must capture exactly what the client needs before writing any software code.",
+                "Stakeholder alignment is critical when designing systems that handle daily operations.",
+                "Clear documentation ensures that both business and technical teams share the same vision."
+            ],
+            Expert: [
+                "Coordinating the overall project architecture requires a deep understanding of data pipelines.",
+                "Reducing quick-commerce churn involves deploying predictive models over large SQL databases.",
+                "Cross-functional teams must optimize backend microservices to support high traffic loads.",
+                "Executing a resilient business strategy demands robust technical infrastructure and rapid iterations."
+            ]
+        };
+
+        const DIFFICULTIES = ['Easy', 'Intermediate', 'Hard', 'Professional', 'Expert'];
+        const DURATIONS = [30, 60, 120];
+        const MAX_LIVES = 4;
+        const ERRORS_PER_LIFE = 3;
+        
+        // --- APP STATE ---
+        let state = {
+            difficulty: 'Intermediate',
+            duration: 60,
+            words: [],
+            currentWordIndex: 0,
+            currentInput: '',
+            timeLeft: 60,
+            timer: null,
+            lives: MAX_LIVES,
+            errorsForLifeCount: 0,
+            stats: {
+                correctStrokes: 0,
+                totalStrokes: 0,
+                totalErrors: 0
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const elViews = {
+            start: document.getElementById('view-start'),
+            playing: document.getElementById('view-playing'),
+            end: document.getElementById('view-end')
+        };
+        const elContainer = document.getElementById('app-container');
+        const elInput = document.getElementById('hidden-input');
+        const elWordsContainer = document.getElementById('words-container');
+        
+        const hudDifficulty = document.getElementById('hud-difficulty');
+        const hudLives = document.getElementById('hud-lives');
+        const hudWpm = document.getElementById('hud-wpm');
+        const hudAcc = document.getElementById('hud-acc');
+        const hudTime = document.getElementById('hud-time');
+        const timeProgress = document.getElementById('time-progress');
+
+        const resTitle = document.getElementById('result-title');
+        const resSubtitle = document.getElementById('result-subtitle');
+        const resWpm = document.getElementById('result-wpm');
+        const resAccuracy = document.getElementById('result-accuracy');
+        const resErrors = document.getElementById('result-errors');
+        const resErrorRate = document.getElementById('result-error-rate');
+        
+        const bannerCeleb = document.getElementById('celebration-banner');
+        const bannerFail = document.getElementById('failed-banner');
+
+        // --- SETUP UI ---
+        function initSetup() {
+            // Difficulty UI
+            const diffContainer = document.getElementById('difficulty-options');
+            diffContainer.innerHTML = '';
+            DIFFICULTIES.forEach(diff => {
+                const btn = document.createElement('button');
+                btn.className = `py-2 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex justify-between items-center border ${state.difficulty === diff ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`;
+                btn.innerHTML = `<span>${diff} Context</span>`;
+                btn.onclick = () => { state.difficulty = diff; initSetup(); };
+                diffContainer.appendChild(btn);
+            });
+
+            // Duration UI
+            const durContainer = document.getElementById('duration-options');
+            durContainer.innerHTML = '';
+            DURATIONS.forEach(time => {
+                const btn = document.createElement('button');
+                btn.className = `py-2 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex justify-between items-center border ${state.duration === time ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`;
+                btn.innerHTML = `<span>${time} Seconds</span>`;
+                btn.onclick = () => { state.duration = time; initSetup(); };
+                durContainer.appendChild(btn);
+            });
+        }
+
+        function generateWords(difficulty, paragraphCount = 6) {
+            let bank = PARAGRAPHS[difficulty] || PARAGRAPHS['Intermediate'];
+            let wordsArray = [];
+            for (let i = 0; i < paragraphCount; i++) {
+                const p = bank[Math.floor(Math.random() * bank.length)];
+                wordsArray = wordsArray.concat(p.split(' '));
+            }
+            return wordsArray;
+        }
+
+        function setView(viewName) {
+            Object.values(elViews).forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+            elViews[viewName].classList.remove('hidden');
+            elViews[viewName].classList.add('flex');
+        }
+
+        // --- CORE LOGIC ---
+        function startGame() {
+            state.words = generateWords(state.difficulty, 10);
+            state.currentWordIndex = 0;
+            state.currentInput = '';
+            state.timeLeft = state.duration;
+            state.lives = MAX_LIVES;
+            state.errorsForLifeCount = 0;
+            state.stats = { correctStrokes: 0, totalStrokes: 0, totalErrors: 0 };
+            
+            hudDifficulty.innerText = `${state.difficulty} Mode`;
+            renderLives();
+            updateHUDStats();
+            
+            setView('playing');
+            renderWords();
+            focusInput();
+
+            clearInterval(state.timer);
+            state.timer = setInterval(tickTime, 1000);
+        }
+
+        function endGame(success = true, reason = 'time') {
+            clearInterval(state.timer);
+            
+            const timeElapsed = state.duration - state.timeLeft;
+            const minutesElapsed = (timeElapsed > 0 ? timeElapsed : 1) / 60; 
+            
+            const wpm = Math.round((state.stats.correctStrokes / 5) / minutesElapsed) || 0;
+            const accuracy = state.stats.totalStrokes > 0 
+                ? Math.round(((state.stats.totalStrokes - state.stats.totalErrors) / state.stats.totalStrokes) * 100) 
+                : 100;
+            const errorRate = state.stats.totalStrokes > 0 
+                ? ((state.stats.totalErrors / state.stats.totalStrokes) * 100).toFixed(1) 
+                : 0;
+
+            // Setup Results Text
+            resSubtitle.innerText = `${state.difficulty} Mode • ${timeElapsed}s`;
+            resWpm.innerText = wpm;
+            resAccuracy.innerText = `${accuracy}%`;
+            resErrors.innerText = state.stats.totalErrors;
+            resErrorRate.innerText = `${errorRate}%`;
+
+            // Reset Banners
+            bannerCeleb.classList.add('hidden');
+            bannerFail.classList.add('hidden');
+            resTitle.innerText = "Assessment Complete";
+            resTitle.className = "text-indigo-600";
+
+            if (reason === 'died') {
+                bannerFail.classList.remove('hidden');
+                resTitle.innerText = "Test Failed";
+                resTitle.className = "text-red-600";
+            } else if (reason === 'quit') {
+                resTitle.innerText = "Assessment Stopped";
+                resTitle.className = "text-orange-500";
+            } else if (success && ['Intermediate', 'Hard', 'Professional', 'Expert'].includes(state.difficulty)) {
+                // Success trigger for celebration!
+                bannerCeleb.classList.remove('hidden');
+            }
+
+            setView('end');
+        }
+
+        function resetToStart() {
+            setView('start');
+        }
+
+        function tickTime() {
+            if (state.timeLeft > 0) {
+                state.timeLeft--;
+                updateHUDStats();
+                
+                const pct = (state.timeLeft / state.duration) * 100;
+                timeProgress.style.width = `${pct}%`;
+
+                if (state.timeLeft <= 0) {
+                    endGame(true, 'time');
+                }
+            }
+        }
+
+        function renderLives() {
+            hudLives.innerHTML = '';
+            for (let i = 0; i < MAX_LIVES; i++) {
+                const heart = document.createElement('i');
+                if (i < state.lives) {
+                    heart.className = 'ph-fill ph-heart heart-pop text-red-500 drop-shadow-sm';
+                } else {
+                    heart.className = 'ph-bold ph-heart-break text-slate-300';
+                }
+                hudLives.appendChild(heart);
+            }
+        }
+
+        function updateHUDStats() {
+            hudTime.innerText = `${state.timeLeft}s`;
+            hudTime.classList.toggle('text-red-500', state.timeLeft <= 10);
+            
+            const timeElapsed = state.duration - state.timeLeft;
+            const minutesElapsed = (timeElapsed > 0 ? timeElapsed : 0.01) / 60;
+            const wpm = Math.round((state.stats.correctStrokes / 5) / minutesElapsed) || 0;
+            hudWpm.innerText = wpm;
+
+            const accuracy = state.stats.totalStrokes > 0 
+                ? Math.round(((state.stats.totalStrokes - state.stats.totalErrors) / state.stats.totalStrokes) * 100) 
+                : 100;
+            hudAcc.innerText = `${accuracy}%`;
+            
+            if (accuracy < 90) hudAcc.classList.add('text-orange-500');
+            else hudAcc.classList.remove('text-orange-500');
+        }
+
+        function focusInput() { elInput.focus(); }
+
+        // --- TYPING ENGINE ---
+        elInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const targetWord = state.words[state.currentWordIndex];
+
+            // Handle spacebar (Word Completion)
+            if (val.endsWith(' ')) {
+                const typedWord = val.trim();
+                
+                if (typedWord === targetWord) {
+                    state.stats.correctStrokes += typedWord.length + 1; // +1 space
+                } else {
+                    // Mark as error if word completed incorrectly, but don't count every char.
+                    // Just a general word error.
+                    handleMistake();
+                }
+
+                state.currentWordIndex++;
+                state.currentInput = '';
+                elInput.value = '';
+                
+                // Infinite text refill
+                if (state.currentWordIndex > state.words.length - 15) {
+                    state.words = state.words.concat(generateWords(state.difficulty, 5));
+                }
+                
+                renderWords();
+                updateHUDStats();
+                return;
+            }
+
+            // Normal typing check
+            const isAdding = val.length > state.currentInput.length;
+            state.currentInput = val;
+
+            if (isAdding) {
+                state.stats.totalStrokes++;
+                const lastCharTyped = val[val.length - 1];
+                const expectedChar = targetWord[val.length - 1];
+
+                if (lastCharTyped !== expectedChar || val.length > targetWord.length) {
+                    handleMistake();
+                } else {
+                    state.stats.correctStrokes++;
+                }
+            }
+
+            renderWords();
+            updateHUDStats();
+        });
+
+        function handleMistake() {
+            state.stats.totalErrors++;
+            state.errorsForLifeCount++;
+            
+            // Screen shake
+            elContainer.classList.add('animate-shake', 'bg-red-50');
+            setTimeout(() => elContainer.classList.remove('animate-shake', 'bg-red-50'), 200);
+
+            // Deduct life logic
+            if (state.errorsForLifeCount >= ERRORS_PER_LIFE) {
+                state.lives--;
+                state.errorsForLifeCount = 0;
+                renderLives();
+                
+                if (state.lives <= 0) {
+                    endGame(false, 'died');
+                }
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if(e.key === ' ' && e.target !== elInput) {
+                e.preventDefault();
+                focusInput();
+            }
+        });
+
+        document.getElementById('view-playing').addEventListener('click', focusInput);
+
+        // --- RENDER TEXT ---
+        function renderWords() {
+            elWordsContainer.innerHTML = '';
+            
+            // Sliding window of words to prevent scrollbar issues
+            const startIndex = Math.max(0, state.currentWordIndex - 6);
+            const endIndex = startIndex + 25; 
+            const visibleWords = state.words.slice(startIndex, endIndex);
+
+            visibleWords.forEach((word, localIndex) => {
+                const globalIndex = startIndex + localIndex;
+                const isCurrent = globalIndex === state.currentWordIndex;
+                const isPast = globalIndex < state.currentWordIndex;
+
+                const wordDiv = document.createElement('div');
+                wordDiv.className = `relative flex transition-all duration-200 rounded-lg px-2 py-1 -mx-2 -my-1 ${isCurrent ? 'bg-indigo-50 shadow-sm ring-1 ring-indigo-200' : ''}`;
+
+                const textContainer = document.createElement('div');
+                textContainer.className = `transition-colors duration-200 tracking-wide flex items-center ${isPast ? 'text-slate-300' : 'text-slate-400'}`;
+
+                const chars = word.split('');
+                chars.forEach((char, charIndex) => {
+                    const span = document.createElement('span');
+                    span.innerText = char;
+
+                    if (isCurrent) {
+                        if (charIndex < state.currentInput.length) {
+                            const isCorrect = state.currentInput[charIndex] === char;
+                            if (isCorrect) {
+                                span.className = "text-indigo-700 font-semibold";
+                            } else {
+                                span.className = "text-red-500 bg-red-100 rounded-sm font-bold border-b-2 border-red-500";
+                            }
+                        } else if (charIndex === state.currentInput.length) {
+                            span.className = "cursor-pulse pb-1 text-slate-800";
+                        } else {
+                            span.className = "text-slate-800";
+                        }
+                    } else if (isPast) {
+                        span.className = "text-slate-300";
+                    } else {
+                        span.className = "text-slate-500";
+                    }
+                    textContainer.appendChild(span);
+                });
+
+                if (isCurrent && state.currentInput.length > word.length) {
+                    const extraSpan = document.createElement('span');
+                    extraSpan.innerText = state.currentInput.slice(word.length);
+                    extraSpan.className = "text-red-500 bg-red-100 rounded-sm border-b-2 border-red-500 font-bold";
+                    textContainer.appendChild(extraSpan);
+                } 
+                else if (isCurrent && state.currentInput.length === word.length) {
+                    const cursorSpan = document.createElement('span');
+                    cursorSpan.className = "cursor-pulse block w-2 h-6 ml-0.5";
+                    textContainer.appendChild(cursorSpan);
+                }
+
+                wordDiv.appendChild(textContainer);
+                elWordsContainer.appendChild(wordDiv);
+            });
+        }
+
+        window.onload = initSetup;
+
+    </script>
+</body>
+</html>
